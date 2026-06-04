@@ -1,10 +1,10 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
     --bg-page: #F2F3F5; --bg-section-alt: #EAEBEE; --bg-card: #FFFFFF;
-    --bmw-blue: #1C3F7A; --bmw-blue-light: #2A5BAD;
-    --bmw-red: #CC0000; --bmw-red-light: #E02020;
-    --white: #FFFFFF; --text-primary: #0D1A2E; --text-muted: #5A6478;
-    --border: rgba(28,63,122,0.13); --border-strong: rgba(28,63,122,0.25);
+    --bmw-blue: #243C73; --bmw-blue-light: #34579E;
+    --bmw-red: #5A2D87; --bmw-red-light: #7A45B8;
+    --white: #FFFFFF; --text-primary: #101A33; --text-muted: #5A6478;
+    --border: rgba(36,60,115,0.13); --border-strong: rgba(36,60,115,0.25);
   }
   html { scroll-behavior: smooth; }
   body { font-family: 'DM Sans', sans-serif; background: var(--bg-page); color: var(--text-primary); font-size: 15px; line-height: 1.7; overflow-x: hidden; }
@@ -56,19 +56,26 @@
   .timeline-bullets { list-style: none; margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.4rem; }
   .timeline-bullets li { font-size: 14px; color: var(--text-muted); line-height: 1.7; padding-left: 1rem; position: relative; }
   .timeline-bullets li::before { content: '–'; position: absolute; left: 0; color: var(--bmw-red); }
-  .badge { display: inline-block; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.2rem 0.6rem; border: 0.5px solid var(--bmw-blue); color: var(--bmw-blue); margin-bottom: 0.6rem; margin-right: 0.4rem; background: rgba(28,63,122,0.05); }
+  .badge { display: inline-block; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.2rem 0.6rem; border: 0.5px solid var(--bmw-blue); color: var(--bmw-blue); margin-bottom: 0.6rem; margin-right: 0.4rem; background: rgba(36,60,115,0.05); }
 
   #projects { background: var(--white); }
   .projects-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.5rem; }
   .project-card { background: var(--bg-page); border: 0.5px solid var(--border-strong); border-top: 3px solid var(--bmw-blue); padding: 2rem; transition: border-top-color 0.2s, transform 0.2s, box-shadow 0.2s; cursor: pointer; }
-  .project-card:hover { border-top-color: var(--bmw-red); transform: translateY(-3px); box-shadow: 0 8px 24px rgba(28,63,122,0.08); }
+  .project-card:hover { border-top-color: var(--bmw-red); transform: translateY(-3px); box-shadow: 0 8px 24px rgba(36,60,115,0.08); }
   .project-tag { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--bmw-red); margin-bottom: 0.8rem; }
   .project-name { font-family: 'Cormorant Garamond', serif; font-size: 1.3rem; font-weight: 500; color: var(--bmw-blue); margin-bottom: 0.7rem; }
   .project-desc { font-size: 13.5px; color: var(--text-muted); line-height: 1.75; }
+  .project-link { display: inline-block; margin-top: 1rem; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--bmw-blue); text-decoration: none; border-bottom: 1px solid var(--bmw-blue); padding-bottom: 2px; transition: color 0.2s, border-color 0.2s; }
+  .project-link:hover { color: var(--bmw-red); border-color: var(--bmw-red); }
 
   #certifications { background: var(--bg-section-alt); }
   .certs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem; }
-  .cert-card { background: var(--white); border: 0.5px solid var(--border-strong); border-left: 3px solid var(--bmw-red); padding: 1.25rem 1.5rem; }
+  .cert-card { background: var(--white); border: 0.5px solid var(--border-strong); border-left: 3px solid var(--bmw-red); overflow: hidden; display: flex; flex-direction: column; transition: transform 0.2s, box-shadow 0.2s; }
+  .cert-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(36,60,115,0.10); }
+  .cert-thumb { display: block; background: var(--bg-section-alt); border-bottom: 0.5px solid var(--border); overflow: hidden; }
+  .cert-thumb img { display: block; width: 100%; height: 200px; object-fit: cover; object-position: top center; transition: transform 0.3s; }
+  .cert-thumb:hover img { transform: scale(1.03); }
+  .cert-body { padding: 1.25rem 1.5rem; }
   .cert-name { font-size: 14px; font-weight: 500; color: var(--bmw-blue); margin-bottom: 0.25rem; }
   .cert-issuer { font-size: 13px; color: var(--text-muted); }
 
@@ -83,7 +90,7 @@
   .social-link { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.55); text-decoration: none; transition: color 0.2s; border-bottom: 0.5px solid rgba(255,255,255,0.2); padding-bottom: 2px; }
   .social-link:hover { color: var(--white); border-bottom-color: var(--white); }
 
-  footer { padding: 2rem 3rem; background: #0B1729; display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: rgba(255,255,255,0.3); }
+  footer { padding: 2rem 3rem; background: #141026; display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: rgba(255,255,255,0.3); }
 
   @keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
 
