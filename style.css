@@ -21,7 +21,7 @@
   .hero-content { max-width: 600px; position: relative; z-index: 2; }
   .hero-eyebrow { font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255,255,255,0.6); font-weight: 500; margin-bottom: 1.2rem; opacity: 0; animation: fadeUp 0.6s 0.2s forwards; }
   .hero-name { font-family: 'Cormorant Garamond', serif; font-size: clamp(3rem, 6vw, 5rem); font-weight: 300; line-height: 1.05; color: var(--white); margin-bottom: 0.3rem; opacity: 0; animation: fadeUp 0.6s 0.35s forwards; }
-  .hero-name span { color: var(--bmw-red); font-weight: 500; }
+  .hero-name span { color: var(--white); font-weight: 500; }
   .hero-title { font-family: 'Cormorant Garamond', serif; font-size: 1.3rem; font-weight: 400; color: rgba(255,255,255,0.65); margin-bottom: 1.8rem; font-style: italic; opacity: 0; animation: fadeUp 0.6s 0.5s forwards; }
   .hero-desc { font-size: 15px; color: rgba(255,255,255,0.7); max-width: 460px; margin-bottom: 2.5rem; line-height: 1.85; opacity: 0; animation: fadeUp 0.6s 0.65s forwards; }
   .hero-cta { display: flex; gap: 1rem; flex-wrap: wrap; opacity: 0; animation: fadeUp 0.6s 0.8s forwards; }
