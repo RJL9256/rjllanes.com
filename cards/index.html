@@ -395,6 +395,16 @@ body{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh;margi
 .lvtag.hot{border-color:#F2C46D;color:#F2C46D}
 .lvtag svg{width:10px;height:10px}
 .brand{white-space:nowrap}
+/* the table's rules sit in the top bar, beside the tagline; the felt keeps only the "Rules & vote" link */
+.subline{flex-basis:100%;display:flex;align-items:baseline;gap:18px;margin-top:-12px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);min-width:0}
+.subline span{white-space:nowrap}
+.subline .toprules{color:var(--brass);opacity:.85;letter-spacing:.14em;white-space:normal;min-width:0}
+.subline .toprules:empty{display:none}
+.brand small{display:none}
+@media (min-width:601px){
+  .felt #arcText,.felt .pkarc{display:none}
+  .felt .arcmore{margin-top:0}
+}
 .lvlchip{white-space:nowrap;display:flex;align-items:center;gap:8px;padding:6px 12px;border:1px solid var(--brass-dim);border-radius:999px;background:var(--glass);font-size:12px;font-weight:600}
 .lvlbar{width:70px;height:5px;border-radius:999px;background:rgba(255,255,255,.12);overflow:hidden}
 .lvlbar i{display:block;height:100%;background:linear-gradient(90deg,#8A6BC4,var(--brass));border-radius:999px}
@@ -466,7 +476,7 @@ body{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh;margi
   body{font-size:14px}
   .bar{padding-block:8px;gap:8px;flex-wrap:nowrap}
   .brand{font-size:19px}
-  .brand small,.meta{display:none}
+  .brand small,.meta,.subline{display:none}
   .stack{padding:4px 10px;gap:6px}
   .stack span{font-size:9px;letter-spacing:.1em}
   .stack b{font-size:14px}
@@ -558,6 +568,7 @@ body{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh;margi
   <button class="spinbtn" id="spinBtn" type="button" hidden>Spin the wheel</button>
   <button class="stack" id="bankBtn" type="button" aria-controls="bank" aria-expanded="false" title="Send or request chips"><span>Your chips</span><b id="mychips">—</b><span class="badge num" id="bankBadge" hidden></span></button>
   <button class="chatbtn" id="chatBtn" type="button" aria-controls="chat" aria-expanded="false" hidden>Chat<span class="badge num" id="chatBadge" hidden></span></button>
+  <div class="subline"><span>Live tables for friends</span><span class="toprules" id="topRules"></span></div>
 </header>
 
 <aside class="chatpanel" id="rulesPanel" aria-label="Game rules and voting" hidden>
@@ -659,7 +670,7 @@ body{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh;margi
     <div class="board" id="pkBoard"></div>
     <div class="total" id="pkPot"></div>
   </section>
-  <div class="arc">Blinds 5 / 10 · Best five-card hand wins · Side pots paid automatically</div>
+  <div class="arc pkarc" id="pkArc">Blinds 5 / 10 · Best five-card hand wins · Side pots paid automatically</div>
   <div class="wheelbar" id="pkWheelBar" hidden></div>
   <div class="status" id="pkStatus" aria-live="polite"></div>
   <section class="seats" id="pkSeats" aria-label="Players"></section>
@@ -1778,6 +1789,7 @@ function drawRules(){
   const st = state, R = rulesOf(st);
   const decided = !!(st && st.locked);
   $('#arcText').textContent = decided ? R.short : 'Vote on the game to start playing';
+  if (view === 'blackjack') $('#topRules').textContent = $('#arcText').textContent;
   const seated = st ? st.seats.filter(x => x && !x.bot) : [];
   const mineSeat = st && me ? seatOf(st, me) >= 0 : false;
   const can = !!(ref && me && canWrite && st);
@@ -2935,6 +2947,7 @@ function updateHeader(){
     if (pstate && me && pstate.bank[me] != null) chips = fmt(pstate.bank[me]);
   } else meta = 'Two tables open';
   $('#meta').textContent = meta;
+  $('#topRules').textContent = view === 'blackjack' ? $('#arcText').textContent : view === 'holdem' ? $('#pkArc').textContent : '';
   $('#mychips').textContent = chips;
   const xp = me ? xpOf(me) : 0, li = levelInfo(xp);
   $('#lvlChip').hidden = !me || (!xp && !inGame);
