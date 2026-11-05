@@ -378,6 +378,7 @@ body{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh;margi
 #bjView>main.table,#pkView>main.table{flex:1 0 auto;display:flex;flex-direction:column;width:100%;box-sizing:border-box}
 #bjView>main.table>.felt,#pkView>main.table>.felt{flex:1 0 auto;align-content:start}
 #bjView>.dock,#pkView>.dock{margin-top:auto}
+.log{display:none}
 
 /* the big table: a curved felt with a lilac rail; players sit around it */
 .felt{position:relative;display:grid;gap:16px;width:100%;box-sizing:border-box;padding:20px clamp(14px,4vw,44px) clamp(40px,6vw,72px);
@@ -643,7 +644,7 @@ body{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh;margi
   <section class="seats" id="seats" aria-label="Players"></section>
   </div>
   <section class="seats open" id="openSeats" aria-label="Open seats"></section>
-  <ol class="log" id="log"></ol>
+  <ol class="log" id="log" hidden></ol>
   <div class="foot" id="foot"></div>
 </main>
 
@@ -664,7 +665,7 @@ body{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh;margi
   <section class="seats" id="pkSeats" aria-label="Players"></section>
   </div>
   <section class="seats open" id="pkOpen" aria-label="Open seats"></section>
-  <ol class="log" id="pkLog"></ol>
+  <ol class="log" id="pkLog" hidden></ol>
   <div class="foot" id="pkFoot"></div>
 </main>
 <footer class="dock"><div class="wrap" id="pkDock"></div></footer>
