@@ -5,7 +5,20 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Card Room 21</title>
 <meta name="description" content="Blackjack and Texas Hold'em with friends.">
-<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<link rel="manifest" href="/cards/manifest.webmanifest">
+<meta name="theme-color" content="#0D1222">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Card Room">
+<link rel="apple-touch-icon" href="/cards/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/cards/icon-192.png">
+<script>
+// opened from the home screen: switch the page into its app layout before anything draws
+if (matchMedia('(display-mode: standalone)').matches || navigator.standalone) document.documentElement.classList.add('app');
+if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('/cards-sw.js', { scope: '/cards' }).catch(() => {}));
+</script>
+<style>html{background:#0D1222}:root{color-scheme:dark;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -341,7 +354,7 @@ button.arc:hover{opacity:1}
 .chatform{display:flex;gap:8px;padding:10px;border-top:1px solid var(--brass-dim)}
 .chatform input{flex:1;min-width:0;font:inherit;font-size:16px;color:var(--text);background:rgba(255,255,255,.06);border:1px solid var(--brass-dim);border-radius:10px;padding:9px 12px}
 .chatform input:focus{outline:2px solid var(--brass);outline-offset:0}
-.chatform .btn{min-width:0;padding:9px 16px}
+.chatform .btn{min-width:0;padding:9px 16px;flex:none !important}
 
 .chatbtns{display:flex;align-items:center;gap:6px;font-family:var(--body)}
 .chatbtns .linkbtn{font-size:13px}
@@ -453,6 +466,34 @@ body{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh;margi
 .wheelmsg{margin:0;min-height:28px;font-size:18px;font-weight:600;text-align:center}
 .wheelmsg b{color:var(--win);font-family:var(--mono)}
 
+/* home-screen app: a tab bar along the bottom, no browser around it */
+.tabbar{display:none}
+.installcard{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:18px;background:var(--glass);border:1px solid var(--brass-dim)}
+.installcard img{border-radius:12px;flex:none}
+.installtxt{display:grid;gap:2px;flex:1;min-width:0;font-size:14px}
+.installtxt span{color:var(--muted);font-size:13px}
+.installcard .btn{min-width:0;padding:9px 18px}
+.app{-webkit-tap-highlight-color:transparent}
+.app,.app body{overscroll-behavior:none}
+.app body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.app input,.app textarea{-webkit-user-select:text;user-select:text}
+.app .tabbar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));position:fixed;left:0;right:0;bottom:0;z-index:40;
+  padding:6px max(8px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px));
+  background:rgba(8,11,22,.97);border-top:1px solid var(--brass-dim);backdrop-filter:blur(14px)}
+.tabbar button{position:relative;display:grid;justify-items:center;gap:3px;border:0;background:none;color:var(--muted);font-size:11px;font-weight:600;padding:6px 0 4px;border-radius:12px}
+.tabbar button svg{width:24px;height:24px}
+.tabbar button[aria-current="page"]{color:var(--brass)}
+.tabbar button[aria-current="page"] svg{filter:drop-shadow(0 0 8px rgba(201,179,240,.55))}
+.tabbar .tdot{position:absolute;top:4px;left:calc(50% + 9px);width:9px;height:9px;border-radius:50%;background:#F2C46D;box-shadow:0 0 0 2px var(--rail)}
+.tabbar .tbadge{position:absolute;top:1px;left:calc(50% + 7px);min-width:17px;height:17px;padding:0 4px;box-sizing:border-box;border-radius:999px;background:var(--lose);color:#2a0b12;font-size:10px;line-height:17px;text-align:center}
+.app{--tabh:calc(62px + env(safe-area-inset-bottom,0px))}
+.app body{padding-bottom:var(--tabh)}
+.app .dock{bottom:var(--tabh);padding-bottom:6px}
+.app #chatBtn,.app .brand .back{display:none}
+.app .chatpanel{bottom:var(--tabh)}
+.app .toast{bottom:calc(var(--tabh) + 120px)}
+.app .installcard{display:none}
+
 /* send / request chips */
 .bankbody{flex:1;overflow-y:auto;padding:12px 14px;display:grid;gap:14px;align-content:start;min-height:0}
 .bankbal{margin:0;color:var(--muted);font-size:13px}
@@ -546,6 +587,9 @@ body{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh;margi
   .chatpanel{top:auto;bottom:0;left:0;right:0;width:auto;height:62vh;border-radius:16px 16px 0 0;border-bottom:none;
     padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
   .chathead,.chatform,.msgs,.bankbody{padding-left:16px;padding-right:16px}
+  .app .chatpanel{height:calc(100dvh - var(--tabh) - 70px - env(safe-area-inset-top,0px))}
+  .installcard{flex-wrap:wrap}
+  .installcard .linkbtn{margin-left:auto}
   .bubble{font-size:12px;max-width:min(170px,46vw);padding:5px 9px}
   .felt{padding:14px 10px 44px;gap:12px;border-radius:0 0 50% 50% / 0 0 70px 70px;box-shadow:inset 0 0 0 8px #2A2050, inset 0 0 0 10px rgba(201,179,240,.55), 0 20px 40px rgba(0,0,0,.45)}
   .felt.oval{border-radius:44px}
@@ -606,6 +650,12 @@ body{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh;margi
 </aside>
 
 <section id="hubView" class="wrap hub">
+  <div class="installcard" id="installCard" hidden>
+    <img src="/cards/apple-touch-icon.png" alt="" width="48" height="48">
+    <div class="installtxt"><b>Get the Card Room app</b><span id="installHow">Add it to your home screen for a full-screen table.</span></div>
+    <button class="btn" id="installBtn" type="button" hidden>Install</button>
+    <button class="linkbtn" id="installX" type="button">Not now</button>
+  </div>
   <div class="hubhead">
     <h1>Pick a table</h1>
     <p>Each table keeps its own chips and buy-ins. Chat follows you to every table.</p>
@@ -681,6 +731,12 @@ body{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh;margi
 </main>
 <footer class="dock"><div class="wrap" id="pkDock"></div></footer>
 </section>
+<nav class="tabbar" id="tabbar" aria-label="Card Room">
+  <button type="button" data-tab="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg><span>Lobby</span></button>
+  <button type="button" data-tab="blackjack"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="11" height="15" rx="2"/><path d="M9 3h9a2 2 0 0 1 2 2v13"/></svg><span>Blackjack</span><i class="tdot" hidden></i></button>
+  <button type="button" data-tab="holdem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 4v3M12 17v3M4 12h3M17 12h3"/></svg><span>Hold'em</span><i class="tdot" hidden></i></button>
+  <button type="button" data-tab="chat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>Chat</span><b class="tbadge num" hidden></b></button>
+</nav>
 <div class="toast" id="toast" hidden></div>
 <div class="fx" id="fx" aria-hidden="true"></div>
 <div class="wheelwrap" id="wheelWrap" hidden>
@@ -1461,7 +1517,7 @@ function render(){
     b.onclick = () => { if (resetArmed){ resetArmed = false; act('reset'); } else { resetArmed = true; render(); setTimeout(() => { resetArmed = false; render(); }, 4000); } };
     ft.append(b);
   }
-  drawStatus(); drawDock(); if (view !== 'holdem') drawBank(); drawRules(); scheduleBots(); renderHub(); paintBubbles(); if (chatCut() !== drawChat.cut){ drawChat.cut = chatCut(); drawChat(); }
+  drawStatus(); drawDock(); if (view !== 'holdem') drawBank(); drawRules(); scheduleBots(); renderHub(); paintBubbles(); drawTabs(); if (chatCut() !== drawChat.cut){ drawChat.cut = chatCut(); drawChat(); }
   if (view !== 'blackjack' && st && myHand(st)){
     const key = `${st.round}|${st.turn.s}|${st.turn.h}|${myHand(st).cards.length}`;
     if (bjNotified !== key){ bjNotified = key; toast("It's your move at blackjack"); }
@@ -1911,6 +1967,7 @@ function drawChat(){
   }
   const unread = shown.filter(m => m.from !== me && (m.at || 0) > lastSeen).length;
   const badge = $('#chatBadge'); badge.hidden = !unread; badge.textContent = unread > 9 ? '9+' : unread;
+  chatUnread = unread; if (typeof drawTabs === 'function') drawTabs();
   $('#chatClear').textContent = clearArmed ? 'Tap to clear for everyone' : 'Clear chat';
   $('#chatClear').hidden = !canWrite || !me || !ref;
   if (!chatOpen) return;
@@ -2195,6 +2252,45 @@ function wheelMoment(st, slot){
   const last = st && st.wheel && st.wheel.last;
   momentOnce(last ? last.at : null, slot, () => { if (last.players.includes(me)) showWheel(last); });
 }
+
+
+/* ---------- home-screen app: tab bar and the install card ---------- */
+const isApp = document.documentElement.classList.contains('app');
+let chatUnread = 0;
+function drawTabs(){
+  if (!isApp) return;
+  document.querySelectorAll('#tabbar button').forEach(b => {
+    const t = b.dataset.tab, on = t === 'chat' ? chatOpen : (!chatOpen && view === t);
+    if (on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+  });
+  const bjTurn = !!(state && myHand(state)), pkTurn = !!(pstate && pMine(pstate));
+  $('#tabbar [data-tab="blackjack"] .tdot').hidden = !bjTurn || view === 'blackjack';
+  $('#tabbar [data-tab="holdem"] .tdot').hidden = !pkTurn || view === 'holdem';
+  const tb = $('#tabbar .tbadge'); tb.hidden = !chatUnread || chatOpen; tb.textContent = chatUnread > 9 ? '9+' : chatUnread;
+}
+document.querySelectorAll('#tabbar button').forEach(b => b.onclick = () => {
+  const t = b.dataset.tab;
+  if (t === 'chat'){ setChat(!chatOpen); drawTabs(); return; }
+  if (chatOpen) setChat(false);
+  location.hash = t === 'home' ? '' : t;
+  drawTabs();
+});
+// outside the app: offer to add it to the home screen (Chrome on Android installs; iPhone needs Share › Add to Home Screen)
+let installEvt = null;
+const installSeen = () => { try { return localStorage.getItem('cr-install-x') === '1'; } catch (e) { return false; } };
+function drawInstall(){
+  const card = $('#installCard');
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
+  const phoneish = matchMedia('(max-width:900px)').matches || ios;
+  card.hidden = isApp || installSeen() || !(installEvt || (ios && phoneish));
+  $('#installBtn').hidden = !installEvt;
+  $('#installHow').textContent = installEvt ? 'Add it to your home screen for a full-screen table.' : 'Tap the Share button, then Add to Home Screen.';
+}
+addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; drawInstall(); });
+addEventListener('appinstalled', () => { installEvt = null; try { localStorage.setItem('cr-install-x', '1'); } catch (e) {} drawInstall(); });
+$('#installBtn').onclick = async () => { if (!installEvt) return; installEvt.prompt(); try { await installEvt.userChoice; } catch (e) {} installEvt = null; drawInstall(); };
+$('#installX').onclick = () => { try { localStorage.setItem('cr-install-x', '1'); } catch (e) {} drawInstall(); };
+drawInstall();
 
 /* ===================== TEXAS HOLD'EM ===================== */
 const PSEATS = 6, SB = 5, BB = 10, PTIMEOUT = 40000, PNEXT = 7000;
@@ -2802,7 +2898,7 @@ function prender(){
   const myp = pMine(st);
   if (view !== 'holdem' && myp && pNotified !== `${h.no}|${h.seq}`){ pNotified = `${h.no}|${h.seq}`; toast("It's your move in Hold'em"); }
 
-  pdrawStatus(); pdrawDock(); if (view === 'holdem') drawBank(); pSchedule(); paintBubbles();
+  pdrawStatus(); pdrawDock(); if (view === 'holdem') drawBank(); pSchedule(); paintBubbles(); drawTabs();
 }
 
 function pdrawStatus(){

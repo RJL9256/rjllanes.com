@@ -1,0 +1,17 @@
+{
+  "id": "/cards",
+  "name": "Card Room 21",
+  "short_name": "Card Room",
+  "description": "Blackjack and Texas Hold'em with friends.",
+  "start_url": "/cards?source=app",
+  "scope": "/cards",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0D1222",
+  "theme_color": "#0D1222",
+  "icons": [
+    { "src": "/cards/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/cards/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/cards/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
