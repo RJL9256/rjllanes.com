@@ -63,8 +63,14 @@
       const name = u.displayName || (u.email ? u.email.split('@')[0] : 'Player');
       fs.doc('profiles/' + u.uid).set({ name, photo: u.photoURL || null, at: Date.now() }, { merge: true }).catch(() => {});
       fs.collection('profiles').onSnapshot(snap => {
-        snap.docs.forEach(d => { profiles[d.id] = d.data(); });
-        if (typeof refreshNames === 'function') refreshNames();
+        let named = false;
+        snap.docs.forEach(d => {
+          const v = d.data(), old = profiles[d.id];
+          if (!old || old.name !== v.name || old.photo !== v.photo) named = true;
+          profiles[d.id] = v; typing[d.id] = v.typing || 0;
+        });
+        if (named && typeof refreshNames === 'function') refreshNames();
+        typingWatchers.forEach(cb => cb({ ...typing }));
       });
       // a quiet way to switch accounts, at the bottom of the lobby
       const hub = document.getElementById('hubView');
@@ -94,7 +100,13 @@
     r.acquire = async () => ({ acquired: true });
     return r;
   };
-  const db = { doc: docRef, collection: p => fs.collection(p) };
+  // who is typing in the chat: a timestamp on your own profile, refreshed while you type
+  const typing = {}, typingWatchers = [];
+  const presence = {
+    typing: on => me ? fs.doc('profiles/' + me.uid).set({ typing: on ? Date.now() : 0 }, { merge: true }) : Promise.resolve(),
+    watch: cb => { typingWatchers.push(cb); cb({ ...typing }); }
+  };
+  const db = { doc: docRef, collection: p => fs.collection(p), presence };
   const user = {
     isOwner: async () => owner,
     canEdit: async () => owner,
@@ -336,6 +348,35 @@ button.arc:hover{opacity:1}
 .chatform input:focus{outline:2px solid var(--brass);outline-offset:0}
 .chatform .btn{min-width:0;padding:9px 16px}
 
+.chatbtns{display:flex;align-items:center;gap:6px;font-family:var(--body)}
+.chatbtns .linkbtn{font-size:13px}
+.msgs .cleared{align-self:center;max-width:none;color:var(--muted);font-size:12px;font-style:italic}
+.typingline{margin:0;padding:0 14px 6px;font-size:12px;color:var(--muted);font-style:italic}
+
+/* speech bubbles over the seats */
+.bubble{position:absolute;left:50%;bottom:calc(100% + 9px);transform:translateX(-50%);z-index:6;width:max-content;max-width:min(220px,90vw);
+  background:var(--ivory);color:var(--ink);font-size:13px;line-height:1.35;font-weight:500;padding:6px 11px;border-radius:14px;
+  box-shadow:0 6px 18px rgba(0,0,0,.45);pointer-events:none;overflow-wrap:anywhere;text-align:left;
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.bubble::after{content:"";position:absolute;left:50%;top:100%;margin-left:-7px;border:7px solid transparent;border-top-color:var(--ivory)}
+.bubble.dots{display:flex;gap:4px;align-items:center;padding:9px 12px;overflow:visible}
+.bubble.dots i{width:6px;height:6px;border-radius:50%;background:var(--ink);opacity:.35;animation:dot 1.2s infinite}
+.bubble.dots i:nth-child(2){animation-delay:.2s}.bubble.dots i:nth-child(3){animation-delay:.4s}
+.bubble.pop{animation:pop .22s ease-out}
+@keyframes dot{0%,60%,100%{opacity:.25;transform:translateY(0)}30%{opacity:.9;transform:translateY(-2px)}}
+@keyframes pop{from{opacity:0;transform:translate(-50%,6px) scale(.92)}to{opacity:1;transform:translate(-50%,0) scale(1)}}
+@media (prefers-reduced-motion:reduce){.bubble.pop,.bubble.dots i{animation:none}}
+
+/* learning mode */
+.coachrow{display:flex;justify-content:center;width:100%}
+.coachtgl{font-size:12px}
+.coach{width:100%;max-width:560px;box-sizing:border-box;border:1px solid var(--brass-dim);border-radius:12px;background:rgba(214,171,82,.08);
+  padding:8px 12px;font-size:13px;line-height:1.45;text-align:left}
+.coach b{color:var(--brass)}
+.coach .why{color:var(--text);opacity:.85}
+.btn.suggest{box-shadow:0 0 0 2px var(--ivory),0 0 18px rgba(214,171,82,.55)}
+.btn.ghost.suggest{border-color:var(--brass);color:var(--brass)}
+
 /* send / request chips */
 .bankbody{flex:1;overflow-y:auto;padding:12px 14px;display:grid;gap:14px;align-content:start;min-height:0}
 .bankbal{margin:0;color:var(--muted);font-size:13px}
@@ -431,6 +472,8 @@ button.arc:hover{opacity:1}
   .chatpanel{top:auto;bottom:0;left:0;right:0;width:auto;height:62vh;border-radius:16px 16px 0 0;border-bottom:none;
     padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
   .chathead,.chatform,.msgs,.bankbody{padding-left:16px;padding-right:16px}
+  .bubble{font-size:12px;max-width:min(170px,46vw);padding:5px 9px}
+  .coach{font-size:12px;padding:6px 10px}
 }
 </style>
 
@@ -466,8 +509,9 @@ button.arc:hover{opacity:1}
 </aside>
 
 <aside class="chatpanel" id="chat" aria-label="Table chat" hidden>
-  <div class="chathead"><span>Table talk</span><button class="linkbtn" id="chatClose" type="button">Close</button></div>
+  <div class="chathead"><span>Table talk</span><span class="chatbtns"><button class="linkbtn" id="chatClear" type="button">Clear chat</button><button class="linkbtn" id="chatClose" type="button">Close</button></span></div>
   <ol class="msgs" id="msgs"></ol>
+  <p class="typingline" id="typingLine" hidden></p>
   <form class="chatform" id="chatForm">
     <input id="chatInput" maxlength="300" autocomplete="off" placeholder="Say something to the table" aria-label="Message">
     <button class="btn" id="chatSend" type="submit">Send</button>
@@ -892,6 +936,7 @@ const ACT = {
     if (st.vote && st.vote.ballots) delete st.vote.ballots[me];
     maybeCloseVote(st);
     if (st.phase === 'betting') maybeDeal(st);
+    if (!humansAt(st) && !humansAt(pstate)) wipeChat(st, null); // the last person out takes the chat with them
   },
   bet(st, arg){
     const i = seatOf(st, me); if (i < 0) return 'Take a seat first';
@@ -1067,6 +1112,7 @@ const ACT = {
     addLog(st, id, isBot(id) ? 'left the table' : 'was removed from the table');
     if (wasTurn) advance(st);
     else if (st.phase === 'betting') maybeDeal(st);
+    if (!isBot(id) && !humansAt(st) && !humansAt(pstate)) wipeChat(st, null);
   },
   move(st, { id, dir }){
     if (!owner) return 'Only the table owner can do that';
@@ -1077,7 +1123,7 @@ const ACT = {
     const i = occ[pos];
     [st.seats[i], st.seats[j]] = [st.seats[j], st.seats[i]];
   },
-  reset(st){ const b = blank(); for (const k of Object.keys(st)) delete st[k]; Object.assign(st, b); addLog(st, null, 'The table was reset'); }
+  reset(st){ const b = blank(); for (const k of Object.keys(st)) delete st[k]; Object.assign(st, b); addLog(st, null, 'The table was reset'); wipeChat(st, 'reset'); }
 };
 
 /* ---------- writing to the shared table ---------- */
@@ -1201,7 +1247,7 @@ function render(){
       openBox.append(el); continue;
     }
     const isTurn = st.turn && st.turn.s === i;
-    el.className = 'seat' + (isTurn ? ' turn' : '') + (s.id === me ? ' mine' : '');
+    el.className = 'seat' + (isTurn ? ' turn' : '') + (s.id === me ? ' mine' : ''); el.dataset.id = s.id;
     const who = document.createElement('div'); who.className = 'who';
     const img = document.createElement('img'); img.alt = ''; img.src = s.bot ? botAvatar(s.id) : (names[s.id] && names[s.id].avatarUrl) || 'data:image/gif;base64,R0lGODlhAQABAAAAACw=';
     const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = nameOf(s.id);
@@ -1323,7 +1369,7 @@ function render(){
     b.onclick = () => { if (resetArmed){ resetArmed = false; act('reset'); } else { resetArmed = true; render(); setTimeout(() => { resetArmed = false; render(); }, 4000); } };
     ft.append(b);
   }
-  drawStatus(); drawDock(); if (view !== 'holdem') drawBank(); drawRules(); scheduleBots(); renderHub();
+  drawStatus(); drawDock(); if (view !== 'holdem') drawBank(); drawRules(); scheduleBots(); renderHub(); paintBubbles(); if (chatCut() !== drawChat.cut){ drawChat.cut = chatCut(); drawChat(); }
   if (view !== 'blackjack' && st && myHand(st)){
     const key = `${st.round}|${st.turn.s}|${st.turn.h}|${myHand(st).cards.length}`;
     if (bjNotified !== key){ bjNotified = key; toast("It's your move at blackjack"); }
@@ -1354,7 +1400,7 @@ function drawStatus(){
 }
 
 function btn(label, onclick, opts = {}){
-  const b = document.createElement('button'); b.className = 'btn' + (opts.ghost ? ' ghost' : '');
+  const b = document.createElement('button'); b.className = 'btn' + (opts.ghost ? ' ghost' : '') + (opts.suggest ? ' suggest' : '');
   b.textContent = label;
   if (opts.key){ const k = document.createElement('kbd'); k.textContent = opts.key; b.append(k); }
   b.disabled = busy || !!opts.disabled; b.onclick = onclick; return b;
@@ -1373,21 +1419,29 @@ function buildDock(dk){
   const mi = st ? seatOf(st, me) : -1;
   if (mi < 0){ msg(`Pick an open seat to join the game. Everyone starts with ${fmt(START)} chips.`); return; }
   const s = st.seats[mi], bank = st.bank[me] || 0;
+  if (st.locked) coachToggle(dk, drawDock);
 
   if (st.phase === 'playing'){
     const h = myHand(st);
-    if (!h){ msg(s.hands.length ? 'Hang tight. Your hand is in.' : 'You are sitting this hand out. Bet on the next one.'); return; }
+    if (!h){
+      msg(s.hands.length ? 'Hang tight. Your hand is in.' : 'You are sitting this hand out. Bet on the next one.');
+      if (coachOn && s.hands.length) coachBox(dk, 'Watch the dealer.', 'The dealer must hit until 17, so a low up card often ends in a bust.');
+      return;
+    }
     const R = rulesOf(st), u = unitOf(h);
     const fd = freeDoubleOK(R, h), fs = isPair(h) && freeSplitOK(R, h);
+    const adv = coachOn ? bjAdvice(st, s, h) : null;
+    if (adv) coachBox(dk, adv.head, adv.why);
     const acts = document.createElement('div'); acts.className = 'actions'; dk.append(acts);
     acts.append(
-      btn('Hit', () => act('hit'), { key:'H' }),
-      btn('Stand', () => act('stand'), { key:'S' }),
-      btn(fd ? 'Free double' : 'Double', () => act('double'), { key:'D', ghost:!fd, disabled: !canDouble(R, h) || (!fd && bank < u) }),
-      btn(fs ? 'Free split' : 'Split', () => act('split'), { key:'P', ghost:!fs, disabled: !isPair(h) || s.hands.length >= 4 || (!fs && bank < u) })
+      btn('Hit', () => act('hit'), { key:'H', suggest: adv && adv.move === 'hit' }),
+      btn('Stand', () => act('stand'), { key:'S', suggest: adv && adv.move === 'stand' }),
+      btn(fd ? 'Free double' : 'Double', () => act('double'), { key:'D', ghost:!fd, suggest: adv && adv.move === 'double', disabled: !canDouble(R, h) || (!fd && bank < u) }),
+      btn(fs ? 'Free split' : 'Split', () => act('split'), { key:'P', ghost:!fs, suggest: adv && adv.move === 'split', disabled: !isPair(h) || s.hands.length >= 4 || (!fs && bank < u) })
     );
     return;
   }
+  if (coachOn && st.locked && bank + s.bet >= MIN_BET) coachBox(dk, 'Tip:', bjTip(st));
 
   if (st.phase === 'betting' && s.bet > 0){
     msg(`Your ${fmt(s.bet)} is on the felt.`);
@@ -1450,6 +1504,77 @@ function buildDock(dk){
     dk.append(sr);
   }
   dk.append(acts);
+}
+
+
+/* ---------- learning mode: a coach in the dock, for whoever turns it on ---------- */
+let coachOn = false;
+try { coachOn = localStorage.getItem('cr-coach') === '1'; } catch (e) {}
+function coachToggle(dk, redraw){
+  const row = document.createElement('div'); row.className = 'coachrow';
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'mini coachtgl' + (coachOn ? ' on' : '');
+  b.textContent = coachOn ? 'Learning mode: on' : 'Learning mode: off'; b.setAttribute('aria-pressed', coachOn);
+  b.onclick = () => { coachOn = !coachOn; try { localStorage.setItem('cr-coach', coachOn ? '1' : '0'); } catch (e) {} redraw(); };
+  row.append(b); dk.append(row);
+}
+function coachBox(dk, head, why){
+  const c = document.createElement('div'); c.className = 'coach';
+  const b = document.createElement('b'); b.textContent = head; c.append(b);
+  if (why){ const w = document.createElement('span'); w.className = 'why'; w.textContent = ' ' + why; c.append(w); }
+  dk.append(c);
+}
+const BJ_TIPS = [
+  'Keep each bet to about 2 to 5 percent of your chips, so a cold streak can\'t knock you out.',
+  'The dealer\'s up card drives every decision. 2 through 6 are bust cards; 7 through Ace usually make a hand.',
+  'Every hand here is dealt from a freshly shuffled shoe, so past hands tell you nothing about the next one.',
+  'Playing basic strategy every hand cuts the house edge to well under one percent. Learning mode shows it on each decision.',
+  'Never split 10s or 5s, and always split Aces and 8s.',
+  'Double down when you\'re likely to finish ahead, like 11 against anything but an Ace.'
+];
+function bjTip(st){
+  const R = rulesOf(st);
+  const tips = BJ_TIPS.slice();
+  if (R.side) tips.push(`The ${R.sideName} side bet pays big but carries a much higher house edge than the main bet.`);
+  if (R.freebet) tips.push('Free Bet: take every free double and free split. The house covers the extra bet, so they cost you nothing.');
+  if (R.spanish) tips.push('Spanish 21 decks have no 10s, so you hit and double a little less than in regular blackjack.');
+  return tips[(st.round || 1) % tips.length];
+}
+// basic strategy (the Hard bot's play) with the reason behind it
+function bjAdvice(st, s, h){
+  const R = rulesOf(st);
+  const move = botDecide(st, { ...s, level:'hard' }, h);
+  const up = rankVal(st.dealer[0]), upName = up === 11 ? 'an Ace' : up === 10 ? 'a 10' : up === 8 ? 'an 8' : `a ${up}`;
+  const sc = score(h.cards), t = sc.t, soft = sc.soft;
+  const pv = rankVal(h.cards[0]), pair = isPair(h);
+  const pairName = pv === 11 ? 'Aces' : pv === 10 ? '10s' : pv === 6 ? 'Sixes' : `${pv}s`;
+  const total = soft ? `Soft ${t}` : `${t}`;
+  const head = { hit:'Hit.', stand:'Stand.', double: freeDoubleOK(R, h) ? 'Take the free double.' : 'Double down.', split: freeSplitOK(R, h) ? `Take the free split.` : `Split your ${pairName}.` }[move];
+  let why;
+  if (move === 'split'){
+    if (freeSplitOK(R, h)) why = 'The house covers the second bet, so you get an extra hand for free.';
+    else if (pv === 11) why = 'Always split Aces: two hands starting at 11 beat one soft 12.';
+    else if (pv === 8) why = 'Always split 8s: 16 is the worst total in the game, and two hands starting at 8 can both improve.';
+    else if (pv === 9) why = `18 is behind against ${upName}; two hands starting at 9 do better.`;
+    else why = `Against ${upName}, two hands starting at ${pv} are worth more than one weak ${t}.`;
+  } else if (move === 'double'){
+    if (freeDoubleOK(R, h)) why = 'The house puts up the extra bet, so there\'s no downside.';
+    else if (soft) why = `${total} can't bust with one card, and ${upName} is a weak dealer card. Get more money out while you're ahead.`;
+    else if (t === 11) why = '11 is the best double in the game: any 10-value card gives you 21.';
+    else if (t === 10) why = `10 against ${upName}: you're the favorite, so get more money on the table.`;
+    else why = `9 against ${upName}: the dealer is weak, so it's worth doubling.`;
+  } else if (move === 'hit'){
+    if (soft) why = `${total} can't bust with one more card, and it won't win often enough against ${upName}.`;
+    else if (t <= 11) why = `You can't bust with one card at ${t}, so take one.`;
+    else if (up >= 7) why = `${upName[0].toUpperCase() + upName.slice(1)} usually ends on 17 or better, so standing on ${t} loses more often than hitting.`;
+    else why = `12 against ${upName}: only a 10-value card busts you, and the dealer isn't weak enough to wait on.`;
+  } else {
+    if (pair && pv === 10) why = '20 already wins most of the time. Never split 10s.';
+    else if (soft) why = `${total} is a solid total against ${upName}.`;
+    else if (t >= 17) why = `At ${t}, most cards would bust you for very little gain.`;
+    else why = `${upName[0].toUpperCase() + upName.slice(1)} is a bust card. Let the dealer take the risk.`;
+  }
+  if (R.spanish) why += ' Spanish 21 strategy differs slightly from this chart.';
+  return { move, head, why };
 }
 
 /* ---------- owner drag: players to and from the Cuck Chair ---------- */
@@ -1700,31 +1825,59 @@ function notifyVote(prev, next){
 }
 
 /* ---------- table chat: one document per message ---------- */
-let chatMsgs = [], chatOpen = false, chatReady = false, lastSeen = 0;
+let chatMsgs = [], chatOpen = false, chatReady = false, lastSeen = 0, clearArmed = false;
 try { lastSeen = +localStorage.getItem('bj-chat-seen') || 0; } catch (e) {}
+// "Clear chat" and an emptied room both move this line: older messages stay hidden for everyone
+const chatCut = () => (state && state.chatClearedAt) || 0;
+const shownChat = () => chatMsgs.filter(m => (m.at || 0) > chatCut());
+const humansAt = st => !!st && st.seats.some(x => x && !x.bot);
+function wipeChat(st, by){ st.chatClearedAt = Date.now(); st.chatClearedBy = by || null; }
+// after someone leaves: once nobody is left at either table, the chat starts fresh
+async function chatAfterLeave(){
+  if (!ref) return;
+  try { await tx(st => { if (humansAt(st)) return SKIP; wipeChat(st, null); }); } catch (e) {}
+}
 function startChat(){
   $('#chatBtn').hidden = false;
   db.collection('chat').orderBy('at', 'desc').limit(60).onSnapshot(snap => {
     const list = snap.docs.map(d => ({ id:d.id, ...d.data() })).reverse();
-    if (chatReady && !chatOpen){
-      const fresh = list.filter(m => m.from !== me && !chatMsgs.some(x => x.id === m.id));
-      if (fresh.length){ const m = fresh[fresh.length - 1]; toast(`${nameOf(m.from)}: ${m.text}`); }
+    const fresh = list.filter(m => !chatMsgs.some(x => x.id === m.id) && (m.at || 0) > chatCut());
+    if (chatReady){
+      fresh.forEach(m => { bubbles[m.from] = { text:m.text, key:m.id, until:Date.now() + BUBBLE_MS }; });
+      const theirs = fresh.filter(m => m.from !== me);
+      if (theirs.length && !chatOpen && !seatedHere(theirs[theirs.length - 1].from)){ const m = theirs[theirs.length - 1]; toast(`${nameOf(m.from)}: ${m.text}`); }
     }
-    chatMsgs = list; chatReady = true; drawChat(); refreshNames();
+    chatMsgs = list; chatReady = true; drawChat(); paintBubbles(); refreshNames();
   }, () => { $('#chatBtn').hidden = true; });
+  if (db.presence) db.presence.watch(map => {
+    Object.keys(map).forEach(id => {
+      const ts = map[id] || 0, prev = typingSeen[id];
+      if (!prev || prev.ts !== ts) typingSeen[id] = { ts, local: ts ? Date.now() : 0 };
+    });
+    paintBubbles(); drawTyping();
+  });
 }
 function drawChat(){
-  if (chatOpen && chatMsgs.length){
-    const newest = chatMsgs[chatMsgs.length - 1].at || 0;
+  const shown = shownChat();
+  if (chatOpen && shown.length){
+    const newest = shown[shown.length - 1].at || 0;
     if (newest > lastSeen){ lastSeen = newest; try { localStorage.setItem('bj-chat-seen', lastSeen); } catch (e) {} }
   }
-  const unread = chatMsgs.filter(m => m.from !== me && (m.at || 0) > lastSeen).length;
+  const unread = shown.filter(m => m.from !== me && (m.at || 0) > lastSeen).length;
   const badge = $('#chatBadge'); badge.hidden = !unread; badge.textContent = unread > 9 ? '9+' : unread;
+  $('#chatClear').textContent = clearArmed ? 'Tap to clear for everyone' : 'Clear chat';
+  $('#chatClear').hidden = !canWrite || !me || !ref;
   if (!chatOpen) return;
   const list = $('#msgs'), stick = list.scrollHeight - list.scrollTop - list.clientHeight < 60;
   list.replaceChildren();
-  if (!chatMsgs.length){ const li = document.createElement('li'); li.className = 'empty'; li.textContent = 'No messages yet. Start the trash talk.'; list.append(li); }
-  chatMsgs.forEach(m => {
+  if (chatCut()){
+    const li = document.createElement('li'); li.className = 'cleared';
+    const by = state && state.chatClearedBy;
+    li.textContent = by === 'reset' ? 'The table was reset, so the chat started fresh' : by ? `${by === me ? 'You' : nameOf(by)} cleared the chat` : 'Everyone left, so the chat started fresh';
+    list.append(li);
+  }
+  if (!shown.length){ const li = document.createElement('li'); li.className = 'empty'; li.textContent = 'No messages yet. Start the trash talk.'; list.append(li); }
+  shown.forEach(m => {
     const li = document.createElement('li'); if (m.from === me) li.className = 'me';
     const f = document.createElement('span'); f.className = 'from'; f.textContent = nameOf(m.from);
     const t = document.createElement('span'); t.className = 'txt'; t.textContent = m.text;
@@ -1734,24 +1887,76 @@ function drawChat(){
   const input = $('#chatInput');
   input.disabled = !canWrite || !me; $('#chatSend').disabled = input.disabled;
   if (input.disabled) input.placeholder = 'You need edit access to chat here';
+  drawTyping();
 }
 function setChat(open){
   if (open && bankOpen) setBank(false);
   if (open && rulesOpen) setRules(false);
   chatOpen = open; $('#chat').hidden = !open; $('#chatBtn').setAttribute('aria-expanded', open);
+  if (!open){ clearArmed = false; sendTyping(false); }
   if (open){ drawChat.jump = true; drawChat(); if (matchMedia('(min-width:601px)').matches) $('#chatInput').focus(); }
   else drawChat();
 }
 $('#chatBtn').onclick = () => setChat(!chatOpen);
 $('#chatClose').onclick = () => setChat(false);
+let clearT;
+$('#chatClear').onclick = async () => {
+  if (!clearArmed){ clearArmed = true; drawChat(); clearTimeout(clearT); clearT = setTimeout(() => { clearArmed = false; drawChat(); }, 4000); return; }
+  clearArmed = false; clearTimeout(clearT);
+  try { await tx(st => { wipeChat(st, me); }); Object.keys(bubbles).forEach(k => delete bubbles[k]); paintBubbles(); }
+  catch (e) { toast('The chat did not clear. Try again.'); }
+  drawChat();
+};
 $('#chatForm').addEventListener('submit', async e => {
   e.preventDefault();
   const input = $('#chatInput'), t = input.value.trim();
   if (!t || !db || !me || !canWrite) return;
-  input.value = '';
+  input.value = ''; sendTyping(false);
   try { await db.collection('chat').add({ from:me, text:t.slice(0, 300), at:Date.now() }); }
   catch (err){ input.value = t; toast(err && err.code === 'quota_exceeded' ? 'The chat is full.' : 'Your message did not send. Try again.'); }
 });
+
+/* ---------- typing dots and speech bubbles over the seats ---------- */
+const BUBBLE_MS = 6000, TYPING_MS = 6000;
+const bubbles = {}, typingSeen = {}, bubblePopped = new Set();
+let typingSent = 0;
+function sendTyping(on){
+  if (!db || !db.presence || !me) return;
+  if (on){ if (Date.now() - typingSent < 2500) return; typingSent = Date.now(); }
+  else { if (!typingSent) return; typingSent = 0; }
+  db.presence.typing(on).catch(() => {});
+}
+$('#chatInput').addEventListener('input', e => sendTyping(!!e.target.value.trim()));
+$('#chatInput').addEventListener('blur', () => sendTyping(false));
+const isTyping = id => id !== me && !!typingSeen[id] && !!typingSeen[id].ts && Date.now() - typingSeen[id].local < TYPING_MS;
+const seatedHere = id => (view === 'blackjack' && state && seatOf(state, id) >= 0) || (view === 'holdem' && pstate && seatOf(pstate, id) >= 0);
+function bubbleOf(id){
+  const b = bubbles[id], live = b && b.until > Date.now();
+  if (isTyping(id) && (!live || typingSeen[id].local > b.until - BUBBLE_MS)) return { key:'typing', dots:true };
+  return live ? { key:b.key, text:b.text } : null;
+}
+// seats are redrawn often, so bubbles are laid on top after each draw and only animate the first time
+function paintBubbles(){
+  document.querySelectorAll('.seat[data-id]').forEach(el => {
+    const want = bubbleOf(el.dataset.id), have = el.querySelector(':scope > .bubble');
+    if (have && want && have.dataset.key === want.key) return;
+    if (have) have.remove();
+    if (!want) return;
+    const bu = document.createElement('div'); bu.className = 'bubble' + (want.dots ? ' dots' : ''); bu.dataset.key = want.key;
+    if (want.dots){ bu.setAttribute('aria-label', `${nameOf(el.dataset.id)} is typing`); bu.append(document.createElement('i'), document.createElement('i'), document.createElement('i')); }
+    else bu.textContent = want.text;
+    const pk = el.dataset.id + '|' + want.key;
+    if (!bubblePopped.has(pk)){ bubblePopped.add(pk); bu.classList.add('pop'); }
+    el.append(bu);
+  });
+}
+function drawTyping(){
+  const who = Object.keys(typingSeen).filter(isTyping).map(nameOf);
+  const el = $('#typingLine');
+  el.hidden = !who.length;
+  el.textContent = who.length === 1 ? `${who[0]} is typing…` : who.length === 2 ? `${who[0]} and ${who[1]} are typing…` : who.length ? 'Several people are typing…' : '';
+}
+setInterval(() => { paintBubbles(); drawTyping(); }, 1000);
 
 /* ===================== TEXAS HOLD'EM ===================== */
 const PSEATS = 6, SB = 5, BB = 10, PTIMEOUT = 40000, PNEXT = 7000;
@@ -2155,6 +2360,48 @@ function pRunJob(st, job){
   } finally { me = saved; }
 }
 
+
+// ---- learning mode for Hold'em: your hand, your odds, and what they mean ----
+function startHand(cards){
+  const [a, b] = cards.map(pval).sort((x, y) => y - x), suited = cards[0][1] === cards[1][1], pair = a === b;
+  const name = pair ? `Pocket ${RANK_WORD[a]}` : `${RANK_ONE[a]}-${RANK_ONE[b]}${suited ? ' suited' : ''}`;
+  let tier;
+  if ((pair && a >= 11) || (a === 14 && b === 13)) tier = 'a premium starting hand';
+  else if ((pair && a >= 8) || (a === 14 && b >= 11) || (a === 13 && b === 12 && suited)) tier = 'a strong starting hand';
+  else if (pair || (a >= 10 && b >= 10) || (suited && a - b === 1 && b >= 5) || (a === 14 && suited)) tier = 'a playable starting hand';
+  else tier = 'a weak starting hand';
+  return { name, tier };
+}
+const eqCache = { key:null, val:0 };
+function myEquity(h, p){
+  const nOpp = Math.max(1, h.ps.filter(q => !q.folded && q !== p).length);
+  const key = `${h.no}|${h.board.length}|${nOpp}`;
+  if (eqCache.key !== key){ eqCache.key = key; eqCache.val = pEquity(p.cards, h.board, nOpp, 700); }
+  return { e: eqCache.val, nOpp };
+}
+const pct = x => `${Math.round(x * 100)}%`;
+function pAdvice(st, p){
+  const h = st.hand, bank = st.bank[me] || 0;
+  const { e, nOpp } = myEquity(h, p);
+  const vs = nOpp === 1 ? 'one player' : `${nOpp} players`;
+  const made = h.board.length >= 3 ? handName(evalCards(p.cards.concat(h.board))) : (() => { const x = startHand(p.cards); return `${x.name}, ${x.tier}`; })();
+  const toCall = Math.max(0, h.curBet - p.bet), pot = pPot(h), need = toCall / (pot + toCall || 1);
+  const canRaise = !p.acted && bank > toCall;
+  const odds = `You win about ${pct(e)} against ${vs}.`;
+  let move, head, why;
+  if (toCall === 0){
+    if (canRaise && (e > 0.6 || (e > 0.45 && nOpp <= 2))){ move = 'raise'; head = `Bet about ${e > 0.6 ? 'two-thirds of' : 'half'} the pot.`; why = `${odds} You're ahead, so make the others pay to see more cards.`; }
+    else { move = 'call'; head = 'Check.'; why = `${odds} Not strong enough to build the pot, and checking is free.`; }
+  } else if (canRaise && e > Math.max(0.6, need + 0.25)){
+    move = 'raise'; head = 'Raise.'; why = `${odds} Calling only needs ${pct(need)}, so you're well ahead. Build the pot.`;
+  } else if (e >= need + 0.02){
+    move = 'call'; head = `Call ${fmt(Math.min(toCall, bank))}.`; why = `${odds} Calling ${fmt(Math.min(toCall, bank))} to win ${fmt(pot)} only needs ${pct(need)}.`;
+  } else {
+    move = 'fold'; head = 'Fold.'; why = `${odds} Calling ${fmt(Math.min(toCall, bank))} into ${fmt(pot)} needs ${pct(need)} to pay off.`;
+  }
+  return { move, head: `${made}. ${head}`, why };
+}
+
 /* ---------- Hold'em: writes, driver and drawing ---------- */
 let pstate = null, pref = null, pmenuFor = null, pkickArmed = null, presetArmed = false;
 let praise = 0, praiseKey = null, pNotified = null;
@@ -2162,9 +2409,11 @@ async function pact(name, arg){
   if (!pref || !canWrite || !me || busy) return;
   busy = true; pdrawDock();
   try {
-    const err = await tx(st => PACT[name](st, arg), pref, pBlank);
+    let emptied = false;
+    const err = await tx(st => { const r = PACT[name](st, arg); if (!r && ['leave', 'kick', 'reset'].includes(name)) emptied = !humansAt(st); return r; }, pref, pBlank);
     if (err === SKIP) return;
     if (err){ toast(err); return; }
+    if (emptied) chatAfterLeave(); // nobody left at Hold'em: clear the chat if blackjack is empty too
     return true;
   } catch (e) {
     if (e && e.code === 'invalid_argument'){ canWrite = false; note = "You're watching this table. Ask its owner to invite you as an Editor so you can play."; }
@@ -2218,7 +2467,7 @@ function prender(){
     const p = pPlayer(st, i);
     const isTurn = live && h.toAct === i;
     const wonAmt = h && h.phase === 'done' && h.won ? h.won[s.id] || 0 : 0;
-    el.className = 'seat' + (isTurn ? ' turn' : '') + (s.id === me ? ' mine' : '') + (p && p.folded ? ' folded' : '') + (wonAmt ? ' won' : '');
+    el.className = 'seat' + (isTurn ? ' turn' : '') + (s.id === me ? ' mine' : '') + (p && p.folded ? ' folded' : '') + (wonAmt ? ' won' : ''); el.dataset.id = s.id;
     const who = document.createElement('div'); who.className = 'who';
     const img = document.createElement('img'); img.alt = ''; img.src = avatarFor(s.id);
     const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = nameOf(s.id);
@@ -2309,7 +2558,7 @@ function prender(){
   const myp = pMine(st);
   if (view !== 'holdem' && myp && pNotified !== `${h.no}|${h.seq}`){ pNotified = `${h.no}|${h.seq}`; toast("It's your move in Hold'em"); }
 
-  pdrawStatus(); pdrawDock(); if (view === 'holdem') drawBank(); pSchedule();
+  pdrawStatus(); pdrawDock(); if (view === 'holdem') drawBank(); pSchedule(); paintBubbles();
 }
 
 function pdrawStatus(){
@@ -2360,9 +2609,12 @@ function pbuildDock(dk){
   if (mi < 0){ msg(`Pick an open seat to join. Everyone starts with ${fmt(START)} chips. Blinds are ${SB} and ${BB}.`); return; }
   const s = st.seats[mi], h = st.hand, bank = st.bank[me] || 0;
   const acts = document.createElement('div'); acts.className = 'actions';
+  coachToggle(dk, pdrawDock);
 
   if (pLive(h)){
     const p = pMine(st);
+    const adv = coachOn && p ? pAdvice(st, p) : null;
+    if (adv) coachBox(dk, adv.head, adv.why);
     if (p){
       const toCall = Math.max(0, h.curBet - p.bet), canRaise = !p.acted && bank > toCall;
       const maxTo = p.bet + bank, minTo = Math.min(h.curBet === 0 ? BB : h.curBet + h.minRaise, maxTo);
@@ -2381,14 +2633,20 @@ function pbuildDock(dk){
         );
         dk.append(rr);
       }
-      acts.append(btn('Fold', () => pact('fold'), { key:'F', ghost:true }));
-      acts.append(btn(toCall === 0 ? 'Check' : bank <= toCall ? `All-in ${fmt(bank)}` : `Call ${fmt(toCall)}`, () => pact('call'), { key:'C' }));
-      if (canRaise) acts.append(btn(praise >= maxTo ? `All-in ${fmt(maxTo)}` : h.curBet === 0 ? `Bet ${fmt(praise)}` : `Raise to ${fmt(praise)}`, () => pact('raise', praise), { key:'R' }));
+      const sug = adv ? (adv.move === 'raise' && !canRaise ? 'call' : adv.move) : null;
+      acts.append(btn('Fold', () => pact('fold'), { key:'F', ghost:true, suggest: sug === 'fold' }));
+      acts.append(btn(toCall === 0 ? 'Check' : bank <= toCall ? `All-in ${fmt(bank)}` : `Call ${fmt(toCall)}`, () => pact('call'), { key:'C', suggest: sug === 'call' }));
+      if (canRaise) acts.append(btn(praise >= maxTo ? `All-in ${fmt(maxTo)}` : h.curBet === 0 ? `Bet ${fmt(praise)}` : `Raise to ${fmt(praise)}`, () => pact('raise', praise), { key:'R', suggest: sug === 'raise' }));
       dk.append(acts);
       return;
     }
     const mp = pFind(h, me);
     if (mp && !mp.folded) msg(mp.allin ? "You're all-in. Good luck." : 'Hang tight. Waiting on the others.');
+    if (coachOn && mp && !mp.folded){
+      const { e, nOpp } = myEquity(h, mp);
+      const made = h.board.length >= 3 ? handName(evalCards(mp.cards.concat(h.board))) : startHand(mp.cards).name;
+      coachBox(dk, `${made}.`, `You win about ${pct(e)} of the time against ${nOpp === 1 ? 'one player' : `${nOpp} players`}. Big bets from the others usually mean strong hands.`);
+    }
     else msg(s.out ? "You're sitting out." : "You're out of this hand. You'll be dealt in next hand.");
     if (s.out) acts.append(btn("I'm back", () => pact('back')));
     else if (!mp || mp.folded) acts.append(btn('Sit out', () => pact('sitOut'), { ghost:true }));
