@@ -10,7 +10,7 @@
 <body>
 
 <nav>
-  <div class="nav-logo">RJL</div>
+  <a href="#home" class="nav-logo">RJL</a>
   <button class="nav-hamburger" aria-label="Toggle menu" aria-expanded="false">
     <span></span><span></span><span></span>
   </button>
@@ -20,20 +20,35 @@
     <li><a href="#projects">Projects</a></li>
     <li><a href="#certifications">Certifications</a></li>
     <li><a href="#contact">Contact</a></li>
+    <li><a href="/cards" class="nav-play">♠ Card Room</a></li>
   </ul>
 </nav>
 
 <section class="hero" id="home">
-  <div class="hero-stripe"></div>
-  <div class="hero-stripe-accent"></div>
   <div class="hero-content">
-    <p class="hero-eyebrow">Business Administration · UC Riverside</p>
-    <h1 class="hero-name">Reddick Jesse<br><span>Llanes</span></h1>
+    <p class="hero-eyebrow"><span class="dot"></span>Business Administration · UC Riverside</p>
+    <h1 class="hero-name">Reddick Jesse Llanes</h1>
     <p class="hero-title">Operations, Administration &amp; Business Development</p>
     <p class="hero-desc">Supply chain and operations professional with experience across cGMP-regulated and fast-paced environments. Founder of TradeByBar—an algorithmic trading platform.</p>
     <div class="hero-cta">
       <a href="#projects" class="btn-primary">View My Work</a>
       <a href="#contact" class="btn-outline">Get In Touch</a>
+    </div>
+  </div>
+  <div class="hero-side">
+    <a href="https://tradebybar.com/" target="_blank" rel="noopener" class="glass hero-card">
+      <span class="hero-card-label">Founder</span>
+      <span class="hero-card-big">TradeByBar</span>
+      <span class="hero-card-sub">Algorithmic trading platform · tradebybar.com ↗</span>
+    </a>
+    <div class="hero-stats">
+      <div class="glass hero-stat"><span class="hero-stat-num">20+</span><span class="hero-stat-label">hospitals coordinated</span></div>
+      <div class="glass hero-stat"><span class="hero-stat-num">15+</span><span class="hero-stat-label">purchase orders a day</span></div>
+    </div>
+    <div class="glass hero-card">
+      <span class="hero-card-label">Studying</span>
+      <span class="hero-card-big">UC Riverside</span>
+      <span class="hero-card-sub">B.S. Business Administration · Finance, Operations &amp; SCM</span>
     </div>
   </div>
 </section>
@@ -44,19 +59,19 @@
   <div class="divider"></div>
   <div class="about-grid">
     <div class="about-stats">
-      <div class="stat-item">
+      <div class="stat-item glass">
         <div class="stat-num">TradeByBar</div>
         <div class="stat-label">Founder · Prop firm trading automation</div>
       </div>
-      <div class="stat-item">
+      <div class="stat-item glass">
         <div class="stat-num">Avid Bioservices</div>
         <div class="stat-label">Supply Chain Specialist · cGMP Receiving Operations</div>
       </div>
-      <div class="stat-item">
+      <div class="stat-item glass">
         <div class="stat-num">DaVita</div>
         <div class="stat-label">Administrative Assistant · 20+ hospitals coordinated</div>
       </div>
-      <div class="stat-item">
+      <div class="stat-item glass">
         <div class="stat-num">UCI FLI</div>
         <div class="stat-label">Future Leaders Initiative · 2025 Cohort Member</div>
       </div>
@@ -171,11 +186,23 @@
   <h2 class="section-title">Work &amp; Ventures</h2>
   <div class="divider"></div>
   <div class="projects-grid">
-    <div class="project-card">
+    <div class="project-card featured">
       <p class="project-tag">Software · Algorithmic Trading</p>
       <p class="project-name">TradeByBar — Auto Trading &amp; Prop-Firm-Safe Automation</p>
       <p class="project-desc">A software vendor — not a trading advisor — that lets traders define their own strategies and risk. The engine backtests those strategies and runs them on a live-data paper account around the clock, on a server that never sleeps, so an edge can be proven before any money is on the line. Live broker execution is on the way; when it arrives, copy-trading will work only between accounts the user owns. TradeByBar never accepts credentials to trade on anyone else's behalf, keeping it clear of CTA/NFA registration and users inside their prop firm's terms of service.</p>
       <a href="https://tradebybar.com/" class="project-link" target="_blank" rel="noopener">tradebybar.com →</a>
+    </div>
+    <div class="project-card">
+      <p class="project-tag">Quant Tool · Backtesting</p>
+      <p class="project-name">QQQ ⇄ NQ Arbitrage Backtester</p>
+      <p class="project-desc">A browser-based backtesting platform for the Nasdaq-100 statistical arbitrage spread between QQQ and NQ futures, with rolling-OLS equilibrium, z-score signals, realistic commissions and slippage, and parameter sweeps.</p>
+      <a href="/qqq-mnq-arbitrage/" class="project-link">Open the backtester →</a>
+    </div>
+    <div class="project-card cardroom">
+      <p class="project-tag">Side Project · Multiplayer Game</p>
+      <p class="project-name">♠ Card Room 21</p>
+      <p class="project-desc">Real-time blackjack and no-limit Texas Hold’em to play with friends in the browser, with bots, table chat, and chip sending.</p>
+      <a href="/cards" class="project-link">Take a seat →</a>
     </div>
     <div class="project-card">
       <p class="project-tag">cGMP · Supply Chain</p>
@@ -234,7 +261,7 @@
   <div class="contact-inner">
     <p class="section-label">Contact</p>
     <h2 class="section-title">Let's Connect</h2>
-    <p style="font-size:15px; margin-bottom:0;">Open to opportunities, collaborations, and conversations. Reach out directly.</p>
+    <p style="font-size:16px; margin-bottom:0;">Open to opportunities, collaborations, and conversations. Reach out directly.</p>
     <a href="mailto:rj@tradebybar.com" class="contact-email">rj@tradebybar.com</a>
     <div class="social-row">
       <a href="https://www.linkedin.com/in/reddick-jesse-llanes-1581a62a0" class="social-link" target="_blank">LinkedIn</a>
@@ -244,8 +271,9 @@
 
 <footer>
   <span>© 2026 Reddick Jesse Llanes</span>
-  <span>Aliso Viejo, CA</span>
+  <span><a href="/cards">♠ Card Room</a> · Aliso Viejo, CA</span>
 </footer>
 <script src="script.js"></script>
+<script src="reveal.js"></script>
 </body>
 </html>
