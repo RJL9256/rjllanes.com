@@ -2027,18 +2027,13 @@ async function sendSticker(label){
 }
 function dockTop(dk, redraw, game, withCoach){
   const row = document.createElement('div'); row.className = 'dockrow';
-  Object.keys(STICKERS).filter(k => game === 'holdem' || k !== 'ALL IN?').forEach(k => {
-    const b = document.createElement('button'); b.type = 'button'; b.className = 'stk'; b.textContent = k;
-    b.style.setProperty('--stk', STICKERS[k]); b.setAttribute('aria-label', `Send a ${k} sticker`); b.onclick = () => sendSticker(k);
-    row.append(b);
-  });
   if (withCoach){
     const b = document.createElement('button'); b.type = 'button'; b.className = 'mini coachtgl' + (coachOn ? ' on' : '');
     b.textContent = coachOn ? 'Learning mode: on' : 'Learning mode: off'; b.setAttribute('aria-pressed', coachOn);
     b.onclick = () => { coachOn = !coachOn; try { localStorage.setItem('cr-coach', coachOn ? '1' : '0'); } catch (e) {} redraw(); };
     row.append(b);
   }
-  dk.append(row);
+  if (row.childNodes.length) dk.append(row);
 }
 
 // big moments: drawn on a layer over the page so redraws can't cut them short
