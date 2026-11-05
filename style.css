@@ -15,7 +15,7 @@ a { color: var(--lilac); }
 a:hover { color: var(--white); }
 
 /* ── Nav ── */
-nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 1rem 3.5rem; background: rgba(13,18,34,0.72); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom: 1px solid var(--line); }
+nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding-top: max(1rem, env(safe-area-inset-top)) !important; display: flex; align-items: center; justify-content: space-between; padding: 1rem 3.5rem; background: rgba(13,18,34,0.72); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom: 1px solid var(--line); }
 .nav-logo { font-family: 'Cormorant Garamond', serif; font-size: 1.6rem; font-weight: 500; color: var(--white); letter-spacing: 0.06em; text-decoration: none; }
 .nav-links { display: flex; gap: 1.9rem; list-style: none; align-items: center; }
 .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 12.5px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500; transition: color 0.2s; }
